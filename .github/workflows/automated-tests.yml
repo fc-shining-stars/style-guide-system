@@ -1,4 +1,4 @@
-name: Automated Tests
+name: Automated Tests for Style Guide System
 
 on:
   push:
