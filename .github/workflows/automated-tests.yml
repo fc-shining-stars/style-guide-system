@@ -1,0 +1,215 @@
+name: Automated Tests
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  # Allow manual triggering
+  workflow_dispatch:
+  # Run tests every day at midnight
+  schedule:
+    - cron: '0 0 * * *'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '20'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Install Playwright browsers
+      run: npx playwright install --with-deps
+
+    - name: Start development server
+      run: |
+        # Set CI environment variable
+        export CI=true
+        # Start the development server
+        npm run dev &
+        # Store the process ID
+        DEV_SERVER_PID=$!
+        echo "Development server started with PID: $DEV_SERVER_PID"
+
+        # Wait for the server to start (up to 30 seconds)
+        MAX_RETRIES=10
+        RETRY_COUNT=0
+        until $(curl --output /dev/null --silent --head --fail http://localhost:3000) || [ $RETRY_COUNT -eq $MAX_RETRIES ]; do
+          echo "Waiting for development server to start... ($((RETRY_COUNT+1))/$MAX_RETRIES)"
+          sleep 3
+          RETRY_COUNT=$((RETRY_COUNT+1))
+        done
+
+        if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
+          echo "Development server failed to start within the timeout period"
+          echo "Checking server logs:"
+          ps aux | grep node
+          exit 1
+        fi
+
+        echo "Development server is up and running"
+
+    - name: Run UI fixes
+      run: npm run fix:ui
+
+    - name: Run tests
+      run: npm run test
+
+    - name: Upload test results
+      uses: actions/upload-artifact@v3
+      with:
+        name: test-results
+        path: test-results/
+        retention-days: 7
+
+    - name: Upload UI fix report
+      uses: actions/upload-artifact@v3
+      with:
+        name: ui-fix-report
+        path: ui-fix-report.html
+        retention-days: 7
+
+  # Add a separate job for database tests
+  db-test:
+    runs-on: ubuntu-latest
+
+    services:
+      # Set up PostgreSQL service for database tests
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+          POSTGRES_DB: style_guide_test
+        ports:
+          - 5432:5432
+        # Health check to ensure PostgreSQL is ready
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '20'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Set up test environment
+      run: |
+        # Create .env.local file for testing
+        echo "NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321" >> .env.local
+        echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=test-anon-key" >> .env.local
+        echo "POSTGRES_URL=postgresql://postgres:postgres@localhost:5432/style_guide_test" >> .env.local
+
+    - name: Run database setup
+      run: npm run db:setup
+
+    - name: Run database tests
+      run: npm run db:test:comprehensive
+
+    - name: Upload database test results
+      uses: actions/upload-artifact@v3
+      with:
+        name: db-test-results
+        path: db-test-results/
+        retention-days: 7
+
+  # Add a job to deploy test reports to GitHub Pages
+  deploy-reports:
+    needs: [test, db-test]
+    runs-on: ubuntu-latest
+    # Only run on main/master branch, not on PRs
+    if: github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Download test results
+      uses: actions/download-artifact@v3
+      with:
+        name: test-results
+        path: public/test-results
+
+    - name: Download UI fix report
+      uses: actions/download-artifact@v3
+      with:
+        name: ui-fix-report
+        path: public
+
+    - name: Download database test results
+      uses: actions/download-artifact@v3
+      with:
+        name: db-test-results
+        path: public/db-test-results
+
+    - name: Create index page
+      run: |
+        mkdir -p public
+        cat > public/index.html << EOL
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Style Guide System Test Reports</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 0; padding: 20px; }
+            h1, h2 { color: #333; }
+            ul { list-style-type: none; padding: 0; }
+            li { margin-bottom: 10px; }
+            a { color: #0366d6; text-decoration: none; }
+            a:hover { text-decoration: underline; }
+            .report-section { margin-bottom: 30px; border: 1px solid #ddd; padding: 20px; border-radius: 5px; }
+            .timestamp { color: #666; font-size: 0.9em; margin-top: 20px; }
+          </style>
+        </head>
+        <body>
+          <h1>Style Guide System Test Reports</h1>
+
+          <div class="report-section">
+            <h2>UI Tests</h2>
+            <ul>
+              <li><a href="./test-results/report.html">UI Test Report</a></li>
+              <li><a href="./ui-fix-report.html">UI Fix Report</a></li>
+              <li><a href="./test-results/combined-report.html">Combined Report</a></li>
+            </ul>
+          </div>
+
+          <div class="report-section">
+            <h2>Database Tests</h2>
+            <ul>
+              <li><a href="./db-test-results/report.html">Database Test Report</a></li>
+            </ul>
+          </div>
+
+          <div class="timestamp">
+            Last updated: $(date)
+          </div>
+        </body>
+        </html>
+        EOL
+
+    - name: Deploy to GitHub Pages
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./public
+        publish_branch: gh-pages
+        force_orphan: true

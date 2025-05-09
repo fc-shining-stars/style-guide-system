@@ -1,36 +1,144 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Style Guide System
+
+A comprehensive style guide system with responsive design, versioning, real-time updates, image management, and an intuitive admin panel.
+
+[![Automated Tests](https://github.com/fc-shining-stars/style-guide-system/actions/workflows/automated-tests.yml/badge.svg)](https://github.com/fc-shining-stars/style-guide-system/actions/workflows/automated-tests.yml)
+
+## Features
+
+- **Responsive Design**: Adapts to different screen sizes and devices
+- **Versioning**: Track changes to your style guide over time
+- **Real-time Updates**: See changes as they happen
+- **Image Management**: Upload and manage images for your style guide
+- **Admin Panel**: Intuitive interface for managing your style guide
+- **Natural Language Processing**: Process natural language requests
+- **Comprehensive Testing**: Automated testing for UI and database
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- Node.js (v20 or higher)
+- npm or yarn
+- Supabase account
+
+### Installation
+
+1. Clone the repository:
+
+```bash
+git clone https://github.com/fc-shining-stars/style-guide-system.git
+cd style-guide-system
+```
+
+2. Install dependencies:
+
+```bash
+npm install
+# or
+yarn install
+```
+
+3. Set up environment variables:
+
+Create a `.env.local` file in the root directory with the following variables:
+
+```
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
+
+4. Set up the database:
+
+```bash
+npm run db:setup
+# or
+yarn db:setup
+```
+
+5. Start the development server:
 
 ```bash
 npm run dev
 # or
 yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Testing
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+The Style Guide System includes a comprehensive testing framework. For detailed information, see [TESTING.md](TESTING.md).
 
-## Learn More
+### Running Tests
 
-To learn more about Next.js, take a look at the following resources:
+To run all tests:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+npm run test:all
+# or
+yarn test:all
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+To use the interactive testing CLI:
 
-## Deploy on Vercel
+```bash
+npm run test:cli
+# or
+yarn test:cli
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Automated Testing
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+This repository is set up with GitHub Actions to automatically run tests on:
+- Every push to main/master
+- Every pull request to main/master
+- Daily at midnight
+- Manual triggering
+
+Test reports are published to GitHub Pages and can be viewed at:
+```
+https://fc-shining-stars.github.io/style-guide-system/
+```
+
+## Project Structure
+
+```
+style-guide-system/
+├── public/              # Static files
+├── scripts/             # Testing and utility scripts
+├── src/                 # Source code
+│   ├── app/             # Next.js app directory
+│   ├── components/      # React components
+│   ├── lib/             # Utility functions
+│   ├── styles/          # CSS styles
+│   └── db/              # Database related code
+├── test-results/        # Test results and reports
+├── .env.local           # Environment variables
+├── package.json         # Dependencies and scripts
+└── README.md            # Project documentation
+```
+
+## Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Acknowledgements
+
+- [Next.js](https://nextjs.org/)
+- [React](https://reactjs.org/)
+- [Supabase](https://supabase.io/)
+- [Tailwind CSS](https://tailwindcss.com/)
+- [Socket.IO](https://socket.io/)
+- [Zustand](https://github.com/pmndrs/zustand)
+- [Headless UI](https://headlessui.dev/)
+- [Heroicons](https://heroicons.com/)
+- [Playwright](https://playwright.dev/) - Used for comprehensive testing

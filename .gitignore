@@ -12,6 +12,9 @@
 
 # testing
 /coverage
+/test-results
+/db-test-results
+/ui-fix-report.html
 
 # next.js
 /.next/
